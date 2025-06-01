@@ -1,9 +1,9 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
   functions = "netlify/functions"
+  command   = "npm run build"
+  publish   = "dist"
 
-  [dev]
-  command    = "npm run dev"     # only used by `netlify dev`
-  port       = 8888
+[dev]
+  command    = "npm run dev"
+  port       = 9999     # or 8888 if freed up
   targetPort = 5173

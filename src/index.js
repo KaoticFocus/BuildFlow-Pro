@@ -8,324 +8,188 @@ import uploadArea from './components/UploadArea.js'
 import HistoryList from './components/HistoryList.js'
 import { transcribeAudio, textToRtf } from './utils/api.js'
 
-/* ── 1) Grab the root #app ─────────────────────────────────────────────────── */
-const app = document.getElementById('app')
+/* ── 1) Grab all relevant elements from the DOM ──────────────────────────── */
+// Project Name
+const projectNameInput = document.getElementById('project-name')
 
-/* ── 2) Render “Project Name” (State 1 of PDF) ─────────────────────────────── */
-// On page load (State 1 :contentReference[oaicite:2]{index=2}), only show this large label + input.
-// The <h1> is very large to match the PDF’s “Project Name” typography.
-const projectNameContainer = document.createElement('div')
-projectNameContainer.className = 'mb-6 w-full'
-projectNameContainer.innerHTML = `
-  <h1 class="text-3xl font-extrabold mb-2">Project Name</h1>
-  <input
-    id="project-name"
-    type="text"
-    placeholder="Enter project name…"
-    class="w-full border border-gray-300 rounded-lg p-3 text-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-400"
-  />
-`
-app.appendChild(projectNameContainer)
+// Upload section wrapper + inputs
+const uploadSection = document.getElementById('upload-section')
+const audioInput = document.getElementById('audio-upload')
+const imageInput = document.getElementById('image-upload')
+const docInput = document.getElementById('doc-upload')
 
-/* ── 3) Upload Section (State 2 of PDF) ────────────────────────────────────── */
-// This entire container is hidden (display: none) until the user types a name.
-const uploadSection = document.createElement('div')
-uploadSection.id = 'upload-section'
-uploadSection.className = 'flex flex-col gap-6 mb-6'
-uploadSection.style.display = 'none'
+// Status & Download Transcript button
+const status = document.getElementById('status')
+const downloadTranscriptBtn = document.getElementById('download-transcript-btn')
 
-// 3a) Upload Audio File
-const audioUploadWrapper = document.createElement('div')
-audioUploadWrapper.className = 'flex flex-col'
-audioUploadWrapper.innerHTML = `
-  <h2 class="text-2xl font-semibold mb-2">Upload Audio File</h2>
-  <div class="flex items-center gap-4">
-    <input
-      id="audio-upload"
-      type="file"
-      accept=".mp3,.wav"
-      class="w-2/5 border border-gray-300 rounded-lg p-2"
-    />
-    <span id="audio-placeholder" class="text-gray-500">No audio file selected</span>
-  </div>
-  <div id="audio-file-list" class="file-list columns-2 border border-gray-200 rounded-lg p-2 mt-2">
-    <!-- filenames will appear here, in two columns -->
-  </div>
-`
-uploadSection.appendChild(audioUploadWrapper)
+// Edit / Generate Scope of Work
+const editGenerateBtn = document.getElementById('edit-generate-btn')
 
-// 3b) Upload Images
-const imageUploadWrapper = document.createElement('div')
-imageUploadWrapper.className = 'flex flex-col'
-imageUploadWrapper.innerHTML = `
-  <h2 class="text-2xl font-semibold mb-2">Upload Images</h2>
-  <div class="flex items-center gap-4">
-    <input
-      id="image-upload"
-      type="file"
-      multiple
-      accept="image/*,image/rtf"
-      class="w-2/5 border border-gray-300 rounded-lg p-2"
-    />
-    <span id="image-placeholder" class="text-gray-500">No images selected</span>
-  </div>
-  <div id="image-file-list" class="file-list columns-2 border border-gray-200 rounded-lg p-2 mt-2">
-    <!-- image filenames go here -->
-  </div>
-`
-uploadSection.appendChild(imageUploadWrapper)
-
-// 3c) Upload Documents
-const docUploadWrapper = document.createElement('div')
-docUploadWrapper.className = 'flex flex-col'
-docUploadWrapper.innerHTML = `
-  <h2 class="text-2xl font-semibold mb-2">Upload Documents</h2>
-  <div class="flex items-center gap-4">
-    <input
-      id="doc-upload"
-      type="file"
-      multiple
-      accept=".pdf,.csv,.rtf,.doc,.docx,.xlsx"
-      class="w-2/5 border border-gray-300 rounded-lg p-2"
-    />
-    <span id="doc-placeholder" class="text-gray-500">No documents selected</span>
-  </div>
-  <div id="doc-file-list" class="file-list columns-2 border border-gray-200 rounded-lg p-2 mt-2">
-    <!-- doc filenames go here -->
-  </div>
-`
-uploadSection.appendChild(docUploadWrapper)
-
-app.appendChild(uploadSection)
-
-/* ── 4) Status & Transcript Download  (below upload) ───────────────────── */
-const status = document.createElement('p')
-status.id = 'status'
-status.className = 'mb-4 text-gray-600'
-app.appendChild(status)
-
-const transcriptRtfLink = document.createElement('a')
-transcriptRtfLink.id = 'transcript-rtf-link'
-transcriptRtfLink.textContent = 'Download Transcript (RTF)'
-transcriptRtfLink.className = 'inline-block px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 mb-6'
-transcriptRtfLink.style.display = 'none'
-app.appendChild(transcriptRtfLink)
-
-/* ── 5) Edit/Generate Scope of Work Button (initially hidden) ───────────── */
-const editGenerateBtn = document.createElement('button')
-editGenerateBtn.id = 'edit-generate-btn'
-editGenerateBtn.textContent = 'Edit Scope of Work'
-editGenerateBtn.className = 'w-full px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6'
-editGenerateBtn.disabled = true
-editGenerateBtn.style.display = 'none'
-app.appendChild(editGenerateBtn)
-
-/* ── 6) Quill Toolbar & Editor (hidden until “Edit” is clicked) ────────── */
-const toolbarContainer = document.createElement('div')
-toolbarContainer.id = 'toolbar'
-toolbarContainer.className = 'mb-2'
-toolbarContainer.style.display = 'none'
-toolbarContainer.innerHTML = `
-  <span class="ql-formats">
-    <select class="ql-header">
-      <option selected></option>
-      <option value="1"></option>
-      <option value="2"></option>
-    </select>
-    <button class="ql-bold"></button>
-    <button class="ql-italic"></button>
-    <button class="ql-underline"></button>
-    <button class="ql-list" value="bullet"></button>
-    <button class="ql-list" value="ordered"></button>
-    <button class="ql-image"></button>
-  </span>
-`
-app.appendChild(toolbarContainer)
-
-const editorContainer = document.createElement('div')
-editorContainer.id = 'editor'
-editorContainer.className = 'bg-white border-4 border-gray-300 rounded-lg p-4 min-h-[250px] mb-6'
-editorContainer.style.display = 'none'
-app.appendChild(editorContainer)
-
+// Quill toolbar & editor
+const toolbarContainer = document.getElementById('toolbar')
+const editorContainer = document.getElementById('editor')
 const quillEditor = new Quill(editorContainer, {
   modules: { toolbar: '#toolbar' },
   theme: 'snow',
 })
 
-/* ── 7) Generate Final SOW + Download Link (hidden until after editing) ─── */
-const generateFinalBtn = document.createElement('button')
-generateFinalBtn.id = 'generate-final-btn'
-generateFinalBtn.textContent = 'Generate Final Scope of Work'
-generateFinalBtn.className = 'w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6'
-generateFinalBtn.disabled = true
-generateFinalBtn.style.display = 'none'
-app.appendChild(generateFinalBtn)
+// Generate Final / Download Final SOW
+const generateFinalBtn = document.getElementById('generate-final-btn')
+const downloadFinalBtn = document.getElementById('download-final-sow')
 
-const downloadFinalLink = document.createElement('a')
-downloadFinalLink.id = 'download-final-sow'
-downloadFinalLink.textContent = 'Download Final SOW (.rtf)'
-downloadFinalLink.className = 'w-full inline-block text-center px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 mb-6'
-downloadFinalLink.style.display = 'none'
-app.appendChild(downloadFinalLink)
+// History container
+const historyContainer = document.getElementById('history-container')
 
-/* ── 8) History List (always at bottom) ────────────────────────────────── */
-const historyContainer = document.createElement('div')
-historyContainer.id = 'history-container'
-historyContainer.className = 'mt-auto pb-4'
-historyContainer.innerHTML = `
-  <h2 class="text-xl font-semibold mb-2">History</h2>
-`
-app.appendChild(historyContainer)
+/* ── 2) Utility: add or remove “dimmed” + toggle disabled ───────────────── */
+function setDimmed(element, shouldDim) {
+  if (shouldDim) {
+    element.classList.add('dimmed')
+    if (element.tagName === 'BUTTON' || element.tagName === 'INPUT') {
+      element.disabled = true
+    }
+  } else {
+    element.classList.remove('dimmed')
+    if (element.tagName === 'BUTTON' || element.tagName === 'INPUT') {
+      element.disabled = false
+    }
+  }
+}
 
-const historyList = new HistoryList((item) => {
-  // When a history entry is clicked, reset the UI to just‐after project name
-  transcriptRtfLink.style.display = 'none'
-  editGenerateBtn.style.display = 'none'
-  editGenerateBtn.disabled = true
-  toolbarContainer.style.display = 'none'
-  editorContainer.style.display = 'none'
-  generateFinalBtn.style.display = 'none'
-  generateFinalBtn.disabled = true
-  downloadFinalLink.style.display = 'none'
-  quillEditor.setContents([])
-
-  document.getElementById('project-name').value = item.projectName
-  handleProjectNameInput() // re-enable uploads
+/* ── 3) On page-load: ensure everything except Project Name is dimmed ───── */
+window.addEventListener('DOMContentLoaded', () => {
+  const toDimOnLoad = [
+    uploadSection,
+    audioInput,
+    imageInput,
+    docInput,
+    status,
+    downloadTranscriptBtn,
+    editGenerateBtn,
+    toolbarContainer,
+    editorContainer,
+    generateFinalBtn,
+    downloadFinalBtn,
+    historyContainer,
+  ]
+  toDimOnLoad.forEach(el => setDimmed(el, true))
 })
-historyList.mount(historyContainer)
 
-/* ── 9) UploadArea (Audio) Initialization ───────────────────────────────── */
-uploadArea(async (file) => {
-  // Reset previous UI state
-  transcriptRtfLink.style.display = 'none'
-  editGenerateBtn.style.display = 'none'
-  editGenerateBtn.disabled = true
-  toolbarContainer.style.display = 'none'
-  editorContainer.style.display = 'none'
-  generateFinalBtn.style.display = 'none'
-  generateFinalBtn.disabled = true
-  downloadFinalLink.style.display = 'none'
-  quillEditor.setContents([])
+/* ── 4) Whenever Project Name changes: if empty, re-dim everything; otherwise un-dim upload section + inputs ─ */
+projectNameInput.addEventListener('input', () => {
+  const name = projectNameInput.value.trim()
 
-  // Transcribe the audio
+  if (name.length === 0) {
+    // Project Name is empty again → re-dim entire upload-section + its inputs
+    setDimmed(uploadSection, true)
+    setDimmed(audioInput, true)
+    setDimmed(imageInput, true)
+    setDimmed(docInput, true)
+
+    // Re-dim any downstream controls as well
+    setDimmed(status, true)
+    setDimmed(downloadTranscriptBtn, true)
+    setDimmed(editGenerateBtn, true)
+    setDimmed(toolbarContainer, true)
+    setDimmed(editorContainer, true)
+    setDimmed(generateFinalBtn, true)
+    setDimmed(downloadFinalBtn, true)
+    setDimmed(historyContainer, true)
+  } else {
+    // Project Name is non-empty → un-dim entire upload-section + its inputs
+    setDimmed(uploadSection, false)
+    setDimmed(audioInput, false)
+    setDimmed(imageInput, false)
+    setDimmed(docInput, false)
+
+    // Leave other controls (downloadTranscript, editGenerate, etc.) in their current state—
+    // they will become un-dimmed later (e.g. when a file is selected or transcription finishes).
+  }
+})
+
+/* ── 5) As soon as ANY file is selected (audio OR image OR doc), enable “Edit SOW” ─── */
+function maybeEnableEditButton() {
+  const anyAudio = audioInput.files.length > 0
+  const anyImages = imageInput.files.length > 0
+  const anyDocs = docInput.files.length > 0
+  if (anyAudio || anyImages || anyDocs) {
+    setDimmed(editGenerateBtn, false)
+  } else {
+    setDimmed(editGenerateBtn, true)
+  }
+}
+
+// Attach to all three “change” events:
+audioInput.addEventListener('change', () => {
+  maybeEnableEditButton()
+})
+imageInput.addEventListener('change', () => {
+  maybeEnableEditButton()
+})
+docInput.addEventListener('change', () => {
+  maybeEnableEditButton()
+})
+
+/* ── 6) Transcription Flow: when user chooses an audio file ─────────────── */
+audioInput.addEventListener('change', async () => {
+  if (audioInput.files.length === 0) return
+
+  // 6a) Dim older controls, show status
+  setDimmed(downloadTranscriptBtn, true)
+  setDimmed(editGenerateBtn, false) // Already enabled if a file was chosen
+  setDimmed(status, false)
   status.textContent = 'Transcribing… 0%'
+
+  // 6b) Transcribe:
   let transcriptText = ''
   try {
-    transcriptText = await transcribeAudio(file, (pct) => {
+    transcriptText = await transcribeAudio(audioInput.files[0], (pct) => {
       status.textContent = `Transcribing… ${pct}%`
     })
   } catch (err) {
     alert('Transcription failed: ' + err.message)
     status.textContent = ''
+    setDimmed(status, true)
     return
   }
+
+  // 6c) Transcription succeeded:
   status.textContent = ''
+  setDimmed(status, true)
 
-  // Show “Download Transcript (RTF)”
-  const projectName = document.getElementById('project-name').value.trim()
+  // Create RTF blob for download
   const rtf = textToRtf(transcriptText)
-  const blob = new Blob([rtf], { type: 'application/rtf' })
-  transcriptRtfLink.href = URL.createObjectURL(blob)
-  transcriptRtfLink.download = `${projectName} – Transcript.rtf`
-  transcriptRtfLink.style.display = 'block'
+  const transcriptBlob = new Blob([rtf], { type: 'application/rtf' })
+  downloadTranscriptBtn.dataset.blobUrl = URL.createObjectURL(transcriptBlob)
+  downloadTranscriptBtn.dataset.filename =
+    (projectNameInput.value.trim() || 'Project') + ' – Transcript.rtf'
 
-  // Show “Edit Scope of Work” button
-  editGenerateBtn.textContent = 'Edit Scope of Work'
-  editGenerateBtn.disabled = false
-  editGenerateBtn.style.display = 'block'
+  setDimmed(downloadTranscriptBtn, false)
 
-  // Add to history
-  historyList.add({ projectName, audioFileName: file.name })
-})
-
-/* ── 10) Enable/Disable Uploads Based on Project Name ────────────────────── */
-const projectNameInput = document.getElementById('project-name')
-projectNameInput.addEventListener('input', handleProjectNameInput)
-
-function handleProjectNameInput() {
-  const name = projectNameInput.value.trim()
-  if (name.length > 0) {
-    uploadSection.style.display = 'flex'
-    document.getElementById('audio-upload').disabled = false
-    document.getElementById('image-upload').disabled = false
-    document.getElementById('doc-upload').disabled = false
-  } else {
-    uploadSection.style.display = 'none'
-    document.getElementById('audio-upload').disabled = true
-    document.getElementById('image-upload').disabled = true
-    document.getElementById('doc-upload').disabled = true
-  }
-}
-// Initial run (hide upload section on page load)
-handleProjectNameInput()
-
-/* ── 11) Show Selected Filenames in Scrollable Boxes ─────────────────────── */
-// a) Audio
-const audioInput = document.getElementById('audio-upload')
-const audioPlaceholder = document.getElementById('audio-placeholder')
-const audioFileList = document.getElementById('audio-file-list')
-audioInput.addEventListener('change', () => {
-  audioFileList.innerHTML = ''
-  const files = Array.from(audioInput.files)
-  if (files.length === 0) {
-    audioPlaceholder.textContent = 'No audio file selected'
-    return
-  }
-  audioPlaceholder.textContent = files[0].name
-
-  // For simplicity, show up to 15 audio filenames in multi-column
-  files.forEach((file) => {
-    const p = document.createElement('p')
-    p.textContent = file.name
-    p.className = 'break-words'
-    audioFileList.appendChild(p)
+  // Un-dim History container (if first entry) and add to it
+  setDimmed(historyContainer, false)
+  historyList.add({
+    projectName: projectNameInput.value.trim(),
+    audioFileName: audioInput.files[0].name,
   })
 })
 
-// b) Images
-const imageInput = document.getElementById('image-upload')
-const imagePlaceholder = document.getElementById('image-placeholder')
-const imageFileList = document.getElementById('image-file-list')
-imageInput.addEventListener('change', () => {
-  imageFileList.innerHTML = ''
-  const files = Array.from(imageInput.files)
-  if (files.length === 0) {
-    imagePlaceholder.textContent = 'No images selected'
+/* ── 7) “Download Transcript (RTF)” Button Click ───────────────────────── */
+downloadTranscriptBtn.addEventListener('click', () => {
+  const url = downloadTranscriptBtn.dataset.blobUrl
+  const filename = downloadTranscriptBtn.dataset.filename
+  if (!url) {
+    alert('No transcript available yet.')
     return
   }
-  imagePlaceholder.textContent = files.map((f) => f.name).join(', ')
-
-  files.forEach((file) => {
-    const p = document.createElement('p')
-    p.textContent = file.name
-    p.className = 'break-words'
-    imageFileList.appendChild(p)
-  })
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 })
 
-// c) Documents
-const docInput = document.getElementById('doc-upload')
-const docPlaceholder = document.getElementById('doc-placeholder')
-const docFileList = document.getElementById('doc-file-list')
-docInput.addEventListener('change', () => {
-  docFileList.innerHTML = ''
-  const files = Array.from(docInput.files)
-  if (files.length === 0) {
-    docPlaceholder.textContent = 'No documents selected'
-    return
-  }
-  docPlaceholder.textContent = files.map((f) => f.name).join(', ')
-
-  files.forEach((file) => {
-    const p = document.createElement('p')
-    p.textContent = file.name
-    p.className = 'break-words'
-    docFileList.appendChild(p)
-  })
-})
-
-/* ── 12) “Edit Scope of Work” Button: Show Quill & Swap Text ─────────────── */
+/* ── 8) “Edit Scope of Work” Button Click ───────────────────────────────── */
 editGenerateBtn.addEventListener('click', async () => {
   const projectName = projectNameInput.value.trim()
   if (!projectName) {
@@ -333,42 +197,133 @@ editGenerateBtn.addEventListener('click', async () => {
     return
   }
 
-  // If Quill is hidden, we are in “Edit” mode
-  if (toolbarContainer.style.display === 'none') {
+  // If toolbar is still dimmed, then we are editing for the first time
+  if (toolbarContainer.classList.contains('dimmed')) {
+    // 8a) Disable button, show loading text
     editGenerateBtn.disabled = true
     editGenerateBtn.textContent = '⟳ Generating…'
 
-    // Collect images & docs as Base64 to send to function
-    // (omitted here for brevity—use same logic as previous step)
-    // …
+    // 8b) Gather base64 images & documents
+    const imagesArray = Array.from(imageInput.files).map((file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          resolve({ name: file.name, data: reader.result })
+        }
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(file)
+      })
+    })
+    const docsArray = Array.from(docInput.files).map((file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          resolve({ name: file.name, data: reader.result })
+        }
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(file)
+      })
+    })
 
-    // Call generate-sow-html, receive HTML, then:
-    toolbarContainer.style.display = 'block'
-    editorContainer.style.display = 'block'
-    quillEditor.root.innerHTML = '<p>(SOW generated by ChatGPT will appear here.)</p>'
+    let images = []
+    let documents = []
+    try {
+      images = await Promise.all(imagesArray)
+      documents = await Promise.all(docsArray)
+    } catch (readErr) {
+      alert('Error reading images/documents: ' + readErr.message)
+      editGenerateBtn.textContent = 'Edit Scope of Work'
+      editGenerateBtn.disabled = false
+      return
+    }
 
-    // Swap text → “Generate Scope of Work”
+    // 8c) Call the Netlify function to generate SOW HTML
+    let responseJson = null
+    try {
+      const resp = await fetch('/.netlify/functions/generate-sow-html', {
+        method: 'POST',
+        body: JSON.stringify({
+          projectName,
+          images,
+          documents,
+        }),
+      })
+      if (!resp.ok) {
+        const text = await resp.text()
+        throw new Error(text)
+      }
+      responseJson = await resp.json()
+    } catch (err) {
+      alert('Failed to generate editable SOW: ' + err.message)
+      editGenerateBtn.textContent = 'Edit Scope of Work'
+      editGenerateBtn.disabled = false
+      return
+    }
+
+    // 8d) Un-dim Quill toolbar/editor and populate it
+    toolbarContainer.classList.remove('dimmed')
+    editorContainer.classList.remove('dimmed')
+    quillEditor.root.innerHTML = responseJson.html || '<p>(no SOW content)</p>'
+
+    // 8e) Swap button text to “Generate Scope of Work”
     editGenerateBtn.textContent = 'Generate Scope of Work'
     editGenerateBtn.disabled = false
 
-    // Show “Generate Final Scope of Work” button
-    generateFinalBtn.style.display = 'block'
-    generateFinalBtn.disabled = false
+    // 8f) Un-dim the “Generate Final Scope of Work” button
+    setDimmed(generateFinalBtn, false)
   }
 })
 
-/* ── 13) “Generate Final Scope” → RTF Download ──────────────────────────── */
+/* ── 9) “Generate Final Scope of Work” Button Click ───────────────────── */
 generateFinalBtn.addEventListener('click', () => {
   const html = quillEditor.root.innerHTML.trim()
   if (!html) {
-    alert('Editor is empty—please edit first.')
+    alert('Editor is empty—please edit before generating final RTF.')
     return
   }
   const rtf = htmlToRtf.convertHtmlToRtf(html)
   const projectName = projectNameInput.value.trim() || 'Project'
   const blob = new Blob([rtf], { type: 'application/rtf' })
   const url = URL.createObjectURL(blob)
-  downloadFinalLink.href = url
-  downloadFinalLink.download = `${projectName} – Final SOW.rtf`
-  downloadFinalLink.style.display = 'block'
+
+  // Store on the Download Final button, then un-dim it
+  downloadFinalBtn.dataset.blobUrl = url
+  downloadFinalBtn.dataset.filename = `${projectName} – Final SOW.rtf`
+  setDimmed(downloadFinalBtn, false)
 })
+
+/* ── 10) “Download Final SOW” Button Click ─────────────────────────────── */
+downloadFinalBtn.addEventListener('click', () => {
+  const url = downloadFinalBtn.dataset.blobUrl
+  const filename = downloadFinalBtn.dataset.filename
+  if (!url) {
+    alert('No SOW available yet.')
+    return
+  }
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+})
+
+/* ── 11) HistoryList Initialization ────────────────────────────────────── */
+const historyList = new HistoryList((item) => {
+  // When clicking a history entry, restore that Project Name and dim everything
+  projectNameInput.value = item.projectName
+
+  // Un-dim inputs so they can interact again, but dim everything else:
+  setDimmed(uploadSection, false)
+  setDimmed(audioInput, false)
+  setDimmed(imageInput, false)
+  setDimmed(docInput, false)
+  setDimmed(status, true)
+  setDimmed(downloadTranscriptBtn, true)
+  setDimmed(editGenerateBtn, false)
+  setDimmed(toolbarContainer, true)
+  setDimmed(editorContainer, true)
+  setDimmed(generateFinalBtn, true)
+  setDimmed(downloadFinalBtn, true)
+})
+historyList.mount(historyContainer)

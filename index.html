@@ -2,38 +2,186 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!--  Mobile‐first viewport  -->
+
+    <!-- Mobile-First Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>RenoRecap</title>
     <link rel="icon" href="/favicon.ico" />
 
-    <!-- Tailwind global styles -->
+    <!-- Tailwind (mobile-first utilities) -->
     <link rel="stylesheet" href="/src/styles/globals.css" />
 
-    <!-- Quill CSS (Snow theme) -->
+    <!-- Quill Snow theme (for the editor) -->
     <link
       href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css"
       rel="stylesheet"
     />
+
+    <style>
+      /* ── “Dimmed” Utility Class ── */
+      .dimmed {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      /* ── Custom file-list scrollbar & multi-column layout ── */
+      .file-list {
+        max-height: 10rem;
+        overflow-y: auto;
+      }
+      .file-list::-webkit-scrollbar {
+        width: 0.4rem;
+      }
+      .file-list::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 0.2rem;
+      }
+      .columns-2 {
+        column-count: 2;
+        column-gap: 1rem;
+      }
+      @media (min-width: 640px) {
+        .columns-2 {
+          column-count: 3;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 antialiased">
-    <noscript class="p-4 text-center text-red-600">
-      JavaScript is required to run RenoRecap. Please enable it in your
-      browser settings.
-    </noscript>
 
-    <!--
-      Everything will be injected under #app via src/index.js.
-      Because this is mobile‐first, #app uses px‐4 on small screens,
-      lg:px‐32 on large, and py‐6 for vertical padding.
-    -->
-    <div id="app" class="min-h-screen flex flex-col px-4 lg:px-32 py-6"></div>
+  <body class="bg-white text-gray-900 antialiased">
+    <!-- Root container (flex-column) -->
+    <div id="app" class="min-h-screen flex flex-col px-4 lg:px-32 py-6">
+      <!-- ── 1) Project Name Section (ACTIVE on Load) ── -->
+      <div id="project-name-container" class="mb-6 w-full">
+        <h1 class="text-3xl font-extrabold mb-2">Project Name</h1>
+        <input
+          id="project-name"
+          type="text"
+          placeholder="Enter project name…"
+          class="w-full border border-gray-300 rounded-lg p-3 text-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-400"
+        />
+      </div>
 
-    <!-- Quill JS (Snow theme) from CDN -->
+      <!-- ── 2) Upload Section (DIMMED on Load) ── -->
+      <div id="upload-section" class="flex flex-col gap-6 mb-6 dimmed">
+        <!-- 2a) Upload Audio File -->
+        <div class="flex flex-col">
+          <h2 class="text-2xl font-semibold mb-1">Upload Audio File</h2>
+          <p class="text-gray-500 text-sm mb-2">Accepts: .mp3, .wav</p>
+          <div class="flex items-center gap-4">
+            <input
+              id="audio-upload"
+              type="file"
+              accept=".mp3,.wav"
+              class="border border-gray-300 rounded-lg p-2"
+              disabled
+            />
+            <!-- Browser will automatically show the chosen filename here -->
+          </div>
+        </div>
+
+        <!-- 2b) Upload Images -->
+        <div class="flex flex-col">
+          <h2 class="text-2xl font-semibold mb-1">Upload Images</h2>
+          <p class="text-gray-500 text-sm mb-2">Accepts: .jpg, .png, .gif, .bmp</p>
+          <div class="flex items-center gap-4">
+            <input
+              id="image-upload"
+              type="file"
+              multiple
+              accept="image/*"
+              class="border border-gray-300 rounded-lg p-2"
+              disabled
+            />
+            <!-- Browser will show filenames when multiple are chosen -->
+          </div>
+        </div>
+
+        <!-- 2c) Upload Documents -->
+        <div class="flex flex-col">
+          <h2 class="text-2xl font-semibold mb-1">Upload Documents</h2>
+          <p class="text-gray-500 text-sm mb-2">Accepts: .pdf, .doc, .docx, .xlsx</p>
+          <div class="flex items-center gap-4">
+            <input
+              id="doc-upload"
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.xlsx"
+              class="border border-gray-300 rounded-lg p-2"
+              disabled
+            />
+            <!-- Browser will show filenames here when selected -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 3) Status & Download Transcript Button (DIMMED on Load) ── -->
+      <p id="status" class="mb-4 text-gray-600 dimmed"></p>
+      <button
+        id="download-transcript-btn"
+        class="inline-block px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 mb-6 dimmed"
+        disabled
+      >
+        Download Transcript (RTF)
+      </button>
+
+      <!-- ── 4) Edit / Generate Scope of Work Button (DIMMED on Load) ── -->
+      <button
+        id="edit-generate-btn"
+        class="w-full px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6 dimmed"
+        disabled
+      >
+        Edit Scope of Work
+      </button>
+
+      <!-- ── 5) Quill Toolbar & Editor (DIMMED on Load) ── -->
+      <div id="toolbar" class="mb-2 dimmed">
+        <span class="ql-formats">
+          <select class="ql-header">
+            <option selected></option>
+            <option value="1"></option>
+            <option value="2"></option>
+          </select>
+          <button class="ql-bold"></button>
+          <button class="ql-italic"></button>
+          <button class="ql-underline"></button>
+          <button class="ql-list" value="bullet"></button>
+          <button class="ql-list" value="ordered"></button>
+          <button class="ql-image"></button>
+        </span>
+      </div>
+      <div
+        id="editor"
+        class="bg-white border-4 border-gray-300 rounded-lg p-4 min-h-[250px] mb-6 dimmed"
+      ></div>
+
+      <!-- ── 6) Generate Final Scope & Download Link (DIMMED on Load) ── -->
+      <button
+        id="generate-final-btn"
+        class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6 dimmed"
+        disabled
+      >
+        Generate Final Scope of Work
+      </button>
+      <button
+        id="download-final-sow"
+        class="w-full inline-block text-center px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 mb-6 dimmed"
+        disabled
+      >
+        Download Final SOW (.rtf)
+      </button>
+
+      <!-- ── 7) History Section (DIMMED until the first transcription) ── -->
+      <div id="history-container" class="mt-auto pb-4 dimmed">
+        <h2 class="text-xl font-semibold mb-2">History</h2>
+        <!-- HistoryList will append <ul> here -->
+      </div>
+    </div>
+
+    <!-- Quill JS (for the editor) -->
     <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
-
-    <!-- Our main front‐end bundle (Vite) -->
+    <!-- Our front-end logic -->
     <script type="module" src="/src/index.js"></script>
   </body>
 </html>

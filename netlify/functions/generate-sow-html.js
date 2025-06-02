@@ -3,36 +3,33 @@
 /**
  * Netlify Function: generate-sow-html
  *
- * Input (POST JSON): { projectName: string, transcript: string }
- * Output (JSON): { html: string }
+ * Input (POST JSON):
+ * {
+ *   projectName: string,
+ *   images: [ { name: string, data: string (base64) }, … ],
+ *   documents: [ { name: string, data: string (base64) }, … ]
+ * }
  *
- * We ask ChatGPT to:
- *   1) List “Key Points” (bullet list).
- *   2) List “Assumptions” (bullet list).
- *   3) Produce a complete “Scope of Work” with:
- *        - Scope Overview (paragraph)
- *        - Tasks & Deliverables (bulleted list)
- *        - Materials (bulleted list)
- *        - Timeline (paragraph)
- *   All returned as one HTML fragment (no <html> or <body>), so the client can drop it into Quill.
+ * Output (JSON):
+ * { html: string }
+ *
+ * We now pass image/document file info into ChatGPT so it can factor
+ * them into “Key Points,” “Assumptions,” and each SOW subsection.
  */
 
 const fetch = require('node-fetch')
 
 module.exports.handler = async (event) => {
-  // 1) Only accept POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' }
   }
 
-  // 2) Grab the OpenAI key
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     console.error('⛔ Missing OPENAI_API_KEY')
     return { statusCode: 500, body: 'Missing OPENAI_API_KEY' }
   }
 
-  // 3) Parse incoming JSON
   let body
   try {
     body = JSON.parse(event.body)
@@ -41,104 +38,76 @@ module.exports.handler = async (event) => {
     return { statusCode: 400, body: 'Invalid JSON' }
   }
 
-  const { projectName, transcript } = body || {}
-  if (
-    typeof projectName !== 'string' ||
-    projectName.trim().length === 0 ||
-    typeof transcript !== 'string' ||
-    transcript.trim().length === 0
-  ) {
-    console.error('⛔ Missing or invalid projectName/transcript:', body)
-    return { statusCode: 400, body: 'Missing projectName or transcript' }
+  const { projectName, images, documents } = body || {}
+  if (!projectName || typeof projectName !== 'string') {
+    console.error('⛔ Missing or invalid projectName:', projectName)
+    return { statusCode: 400, body: 'Missing or invalid projectName' }
   }
 
-  // 4) Build the system prompt as an array of lines, then join with "\n"
+  // 1) Package a brief summary of each file for the prompt
+  const imageInfo =
+    Array.isArray(images) && images.length
+      ? images.map((img) => `• ${img.name} (image, ${img.data.slice(0, 30)}... base64)`).join('\n')
+      : null
+
+  const docInfo =
+    Array.isArray(documents) && documents.length
+      ? documents.map((doc) => `• ${doc.name} (document, ${doc.data.slice(0, 30)}... base64)`).join('\n')
+      : null
+
+  // 2) Build system prompt (array of lines → join)
   const systemPromptLines = [
-    'You are a professional construction consultant. Your job is to read a transcript of a homeowner ↔ contractor discussion and:',
+    'You are a professional construction consultant, reading a homeowner ↔ contractor discussion transcript.',
     '',
-    '1) Identify and list “Key Points” from the conversation. Each bullet should capture a distinct comment or decision (e.g., “Homeowner wants to remove old tub and install a walk-in shower.” “Mirror size differs from vanity width.” etc.).',
+    'You have the following additional files uploaded (if any):',
+    imageInfo ? `Images:\n${imageInfo}` : 'Images: None',
+    docInfo ? `Documents:\n${docInfo}` : 'Documents: None',
     '',
-    '2) Identify and list “Assumptions” you need to make in order to produce a complete Scope of Work. For example:',
-    '   – Assume the homeowner wants a frameless glass shower door.',
-    '   – Assume the existing plumbing is up to code unless noted otherwise.',
-    '   – Assume all new materials must meet 2025 building code requirements.',
-    '',
-    '3) Generate the main “Scope of Work” in semantic HTML. The structure must be exactly:',
+    'Your tasks:',
+    '1) Make a “Key Points” bullet list of everything the homeowner and contractor mentioned (include any details gleaned from the images or documents).',
+    '2) Make an “Assumptions” bullet list, listing every assumption you need to fill in missing details (for example, assume certain tile dimensions from the image).',
+    '3) Generate the full “Scope of Work” in semantic HTML with exactly this structure:',
     '',
     '  <h2>Key Points:</h2>',
     '  <ul>',
-    '    <li>First key point…</li>',
-    '    <li>Second key point…</li>',
-    '    …',
+    '    <li>…</li>',
     '  </ul>',
     '',
     '  <h2>Assumptions:</h2>',
     '  <ul>',
-    '    <li>First assumption…</li>',
-    '    <li>Second assumption…</li>',
-    '    …',
+    '    <li>…</li>',
     '  </ul>',
     '',
     '  <h2>Scope of Work</h2>',
-    '',
     '    <h3>Scope Overview:</h3>',
-    '    <p>One or two paragraphs summarizing the overall goals for the project (e.g., “Complete bathroom remodel including removal of existing tub and tile, installation of new walk-in shower, replacement of vanity and countertops, swapping out fixtures, etc.”).</p>',
+    '    <p>…(two paragraphs summarizing all goals, including references to the files if relevant)…</p>',
     '',
     '    <h3>Tasks &amp; Deliverables:</h3>',
     '    <ul>',
-    '      <li>Detailed bullet: “Demolish existing bathtub, tile, backer board, and vanity.”</li>',
-    '      <li>Detailed bullet: “Install new waterproof backer board and thinset.”</li>',
-    '      <li>Detailed bullet: “Install new porcelain tile on floor and walls.”</li>',
-    '      <li>Detailed bullet: “Install new walk-in shower pan and frameless glass door.”</li>',
-    '      <li>Detailed bullet: “Install new vanity cabinet, sink, faucet, and quartz countertop.”</li>',
-    '      <li>Detailed bullet: “Replace mirror, lighting fixtures, and exhaust fan.”</li>',
-    '      <li>Detailed bullet: “Finish carpentry, paint, caulk, and final cleanup.”</li>',
-    '      …',
+    '      <li>…</li>',
     '    </ul>',
     '',
     '    <h3>Materials:</h3>',
     '    <ul>',
-    '      <li>New 12×24 porcelain tile (floor and walls), white matte finish (200 sf).</li>',
-    '      <li>Waterproof cement backer board (HardieBacker), appropriate screws/thinset.</li>',
-    '      <li>Pre-sloped shower pan kit (complete drain assembly).</li>',
-    '      <li>Frameless glass shower door kit (48″ × 72″, polished chrome hardware).</li>',
-    '      <li>Vanity cabinet (36″ wide) with drawers, quartz countertop and undermount sink.</li>',
-    '      <li>Delta mono-block sink faucet, new shower valve/trims, new tub spout.</li>',
-    '      <li>Toilet (1.28 GPF low-flow) with flange and wax ring.</li>',
-    '      <li>Recessed LED downlights (2) and new vent fan with light fixture.</li>',
-    '      <li>Epoxy tile grout, premium silicone caulk, primer, and paint.</li>',
-    '      …',
+    '      <li>…</li>',
     '    </ul>',
     '',
     '    <h3>Timeline:</h3>',
-    '    <p>',
-    '      Day 1–2: Demolition of existing tub, tile, backer board, vanity, and mirror.<br>',
-    '      Day 3: Rough plumbing inspection and prep.<br>',
-    '      Day 4–5: Install waterproof backer board and underlayments.<br>',
-    '      Day 6–8: Tile installation (floor & walls) and grout.<br>',
-    '      Day 9: Set shower pan and install frameless door.<br>',
-    '      Day 10: Install vanity, sink, faucet, and countertop.<br>',
-    '      Day 11: Install toilet, lighting fixtures, and vent fan.<br>',
-    '      Day 12: Caulk, paint touch-ups, and final cleanup.<br>',
-    '      Day 13: Final client walkthrough and punchlist completion.<br>',
-    '      (Assumes all materials are on site by Day 3.)',
-    '    </p>',
+    '    <p>…(detailed, day‐by‐day timeline, factoring in any lead times from the documents/images)…</p>',
     '',
-    'Use <strong> tags to bold any critical emphasis (for example, section headings). Return only the HTML fragment—no <html> or <body> tags, no markdown fences.',
+    'Use <strong> tags to bold any critical headings or emphasis. Return only the HTML fragment—no <html> or <body> tags.',
   ]
-
   const systemPrompt = systemPromptLines.join('\n')
 
-  // 5) Build the user prompt, embedding the literal transcript
+  // 3) Build user prompt (no transcript needed on this branch, since it's separate)
   const userPromptLines = [
-    `Generate a fully detailed Scope of Work for a project titled "${projectName}".`,
-    `First list Key Points and Assumptions (as described above), then provide the Scope of Work sections exactly in the HTML structure described.`,
-    `Here is the transcript:`,
-    `"""${transcript}"""`,
+    `Create a fully detailed Scope of Work for project "${projectName}".`,
+    'Use the transcript loaded in a previous step, and the information from any images or documents above.',
+    'Return exactly the HTML fragment as specified.',
   ]
   const userPrompt = userPromptLines.join('\n')
 
-  // 6) Assemble the ChatCompletion request
+  // 4) Send request to OpenAI
   const requestBody = {
     model: 'gpt-3.5-turbo',
     messages: [
@@ -149,7 +118,6 @@ module.exports.handler = async (event) => {
     max_tokens: 2000,
   }
 
-  // 7) Call OpenAI’s Chat API
   let openaiRes
   try {
     openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -162,19 +130,13 @@ module.exports.handler = async (event) => {
     })
   } catch (err) {
     console.error('⛔ OpenAI request failed:', err.message)
-    return {
-      statusCode: 502,
-      body: `OpenAI request failed: ${err.message}`,
-    }
+    return { statusCode: 502, body: `OpenAI request failed: ${err.message}` }
   }
 
   if (!openaiRes.ok) {
     const errText = await openaiRes.text()
     console.error(`⛔ OpenAI returned ${openaiRes.status}:`, errText)
-    return {
-      statusCode: openaiRes.status,
-      body: errText || 'OpenAI returned an error',
-    }
+    return { statusCode: openaiRes.status, body: errText || 'OpenAI returned an error' }
   }
 
   let openaiJson
@@ -182,22 +144,15 @@ module.exports.handler = async (event) => {
     openaiJson = await openaiRes.json()
   } catch (err) {
     console.error('⛔ Failed to parse JSON from OpenAI:', err.message)
-    return {
-      statusCode: 502,
-      body: 'Invalid JSON from OpenAI',
-    }
+    return { statusCode: 502, body: 'Invalid JSON from OpenAI' }
   }
 
   const html = openaiJson.choices?.[0]?.message?.content?.trim()
   if (!html) {
-    console.error('⛔ Empty HTML from OpenAI:', JSON.stringify(openaiJson))
-    return {
-      statusCode: 502,
-      body: 'OpenAI did not return HTML',
-    }
+    console.error('⛔ Empty HTML from OpenAI response:', JSON.stringify(openaiJson))
+    return { statusCode: 502, body: 'OpenAI did not return HTML' }
   }
 
-  // 8) Return the HTML fragment
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },

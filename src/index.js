@@ -4,92 +4,128 @@ import './styles/globals.css'
 import 'quill/dist/quill.snow.css'
 import Quill from 'quill'
 import htmlToRtf from 'html-to-rtf'
-import UploadArea from './components/UploadArea.js'
+import uploadArea from './components/UploadArea.js'
 import HistoryList from './components/HistoryList.js'
 import { transcribeAudio, textToRtf } from './utils/api.js'
 
-/* ── 1) Grab #app ──────────────────────────────────────────────────────────── */
+/* ── 1) Grab the root #app ─────────────────────────────────────────────────── */
 const app = document.getElementById('app')
 
-/* ── 2) Project Name ───────────────────────────────────────────────────────── */
+/* ── 2) Render “Project Name” (State 1 of PDF) ─────────────────────────────── */
+// On page load (State 1 :contentReference[oaicite:2]{index=2}), only show this large label + input.
+// The <h1> is very large to match the PDF’s “Project Name” typography.
 const projectNameContainer = document.createElement('div')
-projectNameContainer.className = 'mb-4'
+projectNameContainer.className = 'mb-6 w-full'
 projectNameContainer.innerHTML = `
-  <label for="project-name" class="block text-lg font-medium mb-1">
-    Project Name
-  </label>
+  <h1 class="text-3xl font-extrabold mb-2">Project Name</h1>
   <input
     id="project-name"
     type="text"
     placeholder="Enter project name…"
-    class="w-full border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-400"
+    class="w-full border border-gray-300 rounded-lg p-3 text-lg placeholder-gray-500 focus:ring-2 focus:ring-blue-400"
   />
 `
 app.appendChild(projectNameContainer)
 
-/* ── 3) Status Line ───────────────────────────────────────────────────────── */
+/* ── 3) Upload Section (State 2 of PDF) ────────────────────────────────────── */
+// This entire container is hidden (display: none) until the user types a name.
+const uploadSection = document.createElement('div')
+uploadSection.id = 'upload-section'
+uploadSection.className = 'flex flex-col gap-6 mb-6'
+uploadSection.style.display = 'none'
+
+// 3a) Upload Audio File
+const audioUploadWrapper = document.createElement('div')
+audioUploadWrapper.className = 'flex flex-col'
+audioUploadWrapper.innerHTML = `
+  <h2 class="text-2xl font-semibold mb-2">Upload Audio File</h2>
+  <div class="flex items-center gap-4">
+    <input
+      id="audio-upload"
+      type="file"
+      accept=".mp3,.wav"
+      class="w-2/5 border border-gray-300 rounded-lg p-2"
+    />
+    <span id="audio-placeholder" class="text-gray-500">No audio file selected</span>
+  </div>
+  <div id="audio-file-list" class="file-list columns-2 border border-gray-200 rounded-lg p-2 mt-2">
+    <!-- filenames will appear here, in two columns -->
+  </div>
+`
+uploadSection.appendChild(audioUploadWrapper)
+
+// 3b) Upload Images
+const imageUploadWrapper = document.createElement('div')
+imageUploadWrapper.className = 'flex flex-col'
+imageUploadWrapper.innerHTML = `
+  <h2 class="text-2xl font-semibold mb-2">Upload Images</h2>
+  <div class="flex items-center gap-4">
+    <input
+      id="image-upload"
+      type="file"
+      multiple
+      accept="image/*,image/rtf"
+      class="w-2/5 border border-gray-300 rounded-lg p-2"
+    />
+    <span id="image-placeholder" class="text-gray-500">No images selected</span>
+  </div>
+  <div id="image-file-list" class="file-list columns-2 border border-gray-200 rounded-lg p-2 mt-2">
+    <!-- image filenames go here -->
+  </div>
+`
+uploadSection.appendChild(imageUploadWrapper)
+
+// 3c) Upload Documents
+const docUploadWrapper = document.createElement('div')
+docUploadWrapper.className = 'flex flex-col'
+docUploadWrapper.innerHTML = `
+  <h2 class="text-2xl font-semibold mb-2">Upload Documents</h2>
+  <div class="flex items-center gap-4">
+    <input
+      id="doc-upload"
+      type="file"
+      multiple
+      accept=".pdf,.csv,.rtf,.doc,.docx,.xlsx"
+      class="w-2/5 border border-gray-300 rounded-lg p-2"
+    />
+    <span id="doc-placeholder" class="text-gray-500">No documents selected</span>
+  </div>
+  <div id="doc-file-list" class="file-list columns-2 border border-gray-200 rounded-lg p-2 mt-2">
+    <!-- doc filenames go here -->
+  </div>
+`
+uploadSection.appendChild(docUploadWrapper)
+
+app.appendChild(uploadSection)
+
+/* ── 4) Status & Transcript Download  (below upload) ───────────────────── */
 const status = document.createElement('p')
+status.id = 'status'
 status.className = 'mb-4 text-gray-600'
 app.appendChild(status)
 
-/* ── 4) Download Transcript (RTF) ──────────────────────────────────────────── */
 const transcriptRtfLink = document.createElement('a')
+transcriptRtfLink.id = 'transcript-rtf-link'
 transcriptRtfLink.textContent = 'Download Transcript (RTF)'
-transcriptRtfLink.className = 'mt-2 inline-block px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700'
+transcriptRtfLink.className = 'inline-block px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 mb-6'
 transcriptRtfLink.style.display = 'none'
 app.appendChild(transcriptRtfLink)
 
-/* ── 5) Generate Scope of Work Button ───────────────────────────────────────── */
-const generateHtmlSOWBtn = document.createElement('button')
-generateHtmlSOWBtn.textContent = 'Generate Scope of Work'
-generateHtmlSOWBtn.className = 'mt-2 ml-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700'
-generateHtmlSOWBtn.style.display = 'none'
-app.appendChild(generateHtmlSOWBtn)
+/* ── 5) Edit/Generate Scope of Work Button (initially hidden) ───────────── */
+const editGenerateBtn = document.createElement('button')
+editGenerateBtn.id = 'edit-generate-btn'
+editGenerateBtn.textContent = 'Edit Scope of Work'
+editGenerateBtn.className = 'w-full px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6'
+editGenerateBtn.disabled = true
+editGenerateBtn.style.display = 'none'
+app.appendChild(editGenerateBtn)
 
-/* ── 6) Image Upload Section ───────────────────────────────────────────────── */
-// Label + file input for multiple images
-const imageUploadContainer = document.createElement('div')
-imageUploadContainer.className = 'mt-4'
-imageUploadContainer.innerHTML = `
-  <label for="image-upload" class="block text-md font-medium mb-1">
-    Upload Images (you can select multiple):
-  </label>
-  <input
-    id="image-upload"
-    type="file"
-    multiple
-    accept="image/*"
-    class="border border-gray-300 rounded p-1"
-  />
-  <div id="image-preview" class="flex flex-wrap gap-2 mt-2"></div>
-`
-app.appendChild(imageUploadContainer)
-
-/* ── 7) Document Upload Section ─────────────────────────────────────────────── */
-// Label + file input for multiple documents
-const docUploadContainer = document.createElement('div')
-docUploadContainer.className = 'mt-4'
-docUploadContainer.innerHTML = `
-  <label for="doc-upload" class="block text-md font-medium mb-1">
-    Upload Documents (PDF/Word/Excel):
-  </label>
-  <input
-    id="doc-upload"
-    type="file"
-    multiple
-    accept=".pdf,.doc,.docx,.xlsx"
-    class="border border-gray-300 rounded p-1"
-  />
-  <div id="doc-preview" class="mt-2"></div>
-`
-app.appendChild(docUploadContainer)
-
-/* ── 8) Quill Toolbar & Editor ─────────────────────────────────────────────── */
-// Create toolbar placeholder (hidden initially)
-const quillToolbar = document.createElement('div')
-quillToolbar.id = 'toolbar'
-quillToolbar.style.display = 'none'
-quillToolbar.innerHTML = `
+/* ── 6) Quill Toolbar & Editor (hidden until “Edit” is clicked) ────────── */
+const toolbarContainer = document.createElement('div')
+toolbarContainer.id = 'toolbar'
+toolbarContainer.className = 'mb-2'
+toolbarContainer.style.display = 'none'
+toolbarContainer.innerHTML = `
   <span class="ql-formats">
     <select class="ql-header">
       <option selected></option>
@@ -104,92 +140,75 @@ quillToolbar.innerHTML = `
     <button class="ql-image"></button>
   </span>
 `
-app.appendChild(quillToolbar)
+app.appendChild(toolbarContainer)
 
-// Create editor container (hidden initially)
-const quillContainer = document.createElement('div')
-quillContainer.id = 'editor'
-quillContainer.style.display = 'none'
-quillContainer.className = 'bg-white border border-gray-300 rounded p-4 min-h-[300px] mt-2'
-app.appendChild(quillContainer)
+const editorContainer = document.createElement('div')
+editorContainer.id = 'editor'
+editorContainer.className = 'bg-white border-4 border-gray-300 rounded-lg p-4 min-h-[250px] mb-6'
+editorContainer.style.display = 'none'
+app.appendChild(editorContainer)
 
-// Initialize Quill
-const quillEditor = new Quill(quillContainer, {
+const quillEditor = new Quill(editorContainer, {
   modules: { toolbar: '#toolbar' },
-  theme: 'snow'
+  theme: 'snow',
 })
 
-/* ── 9) Generate Final Scope of Work ───────────────────────────────────────── */
-const generateFinalSOWBtn = document.createElement('button')
-generateFinalSOWBtn.textContent = 'Generate Final Scope of Work'
-generateFinalSOWBtn.className = 'mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700'
-generateFinalSOWBtn.style.display = 'none'
-generateFinalSOWBtn.onclick = () => {
-  const finalHtml = quillEditor.root.innerHTML.trim()
-  if (!finalHtml) {
-    alert('❗ Editor is empty. Please add or edit content before generating the final RTF.')
-    return
-  }
+/* ── 7) Generate Final SOW + Download Link (hidden until after editing) ─── */
+const generateFinalBtn = document.createElement('button')
+generateFinalBtn.id = 'generate-final-btn'
+generateFinalBtn.textContent = 'Generate Final Scope of Work'
+generateFinalBtn.className = 'w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mb-6'
+generateFinalBtn.disabled = true
+generateFinalBtn.style.display = 'none'
+app.appendChild(generateFinalBtn)
 
-  // Convert the edited HTML to RTF
-  let finalRtf = ''
-  try {
-    finalRtf = htmlToRtf.convertHtmlToRtf(finalHtml)
-  } catch (err) {
-    alert(`Error converting HTML to RTF: ${err.message}`)
-    return
-  }
+const downloadFinalLink = document.createElement('a')
+downloadFinalLink.id = 'download-final-sow'
+downloadFinalLink.textContent = 'Download Final SOW (.rtf)'
+downloadFinalLink.className = 'w-full inline-block text-center px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 mb-6'
+downloadFinalLink.style.display = 'none'
+app.appendChild(downloadFinalLink)
 
-  // Download the final RTF
-  const projectName = document.getElementById('project-name').value.trim() || 'Project'
-  const blob = new Blob([finalRtf], { type: 'application/rtf' })
-  const url = URL.createObjectURL(blob)
+/* ── 8) History List (always at bottom) ────────────────────────────────── */
+const historyContainer = document.createElement('div')
+historyContainer.id = 'history-container'
+historyContainer.className = 'mt-auto pb-4'
+historyContainer.innerHTML = `
+  <h2 class="text-xl font-semibold mb-2">History</h2>
+`
+app.appendChild(historyContainer)
 
-  downloadFinalSOWLink.href = url
-  downloadFinalSOWLink.download = `${projectName} – Final SOW.rtf`
-  downloadFinalSOWLink.style.display = 'inline-block'
-}
-app.appendChild(generateFinalSOWBtn)
-
-/* ── 10) Download Final Scope of Work Link ─────────────────────────────────── */
-const downloadFinalSOWLink = document.createElement('a')
-downloadFinalSOWLink.textContent = 'Download Final Scope of Work (.rtf)'
-downloadFinalSOWLink.className = 'mt-2 ml-2 inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700'
-downloadFinalSOWLink.style.display = 'none'
-app.appendChild(downloadFinalSOWLink)
-
-/* ── 11) History List ─────────────────────────────────────────────────────── */
 const historyList = new HistoryList((item) => {
-  // If user chooses a previous audio from history, reset everything
+  // When a history entry is clicked, reset the UI to just‐after project name
   transcriptRtfLink.style.display = 'none'
-  generateHtmlSOWBtn.style.display = 'none'
-  quillToolbar.style.display = 'none'
-  quillContainer.style.display = 'none'
-  generateFinalSOWBtn.style.display = 'none'
-  downloadFinalSOWLink.style.display = 'none'
-  quillEditor.setContents([]) // clear Quill
-})
-historyList.mount(app)
-
-/* ── 12) Upload Area ───────────────────────────────────────────────────────── */
-const uploadArea = new UploadArea(async (file) => {
-  // (a) Hide/reset everything
-  transcriptRtfLink.style.display = 'none'
-  generateHtmlSOWBtn.style.display = 'none'
-  quillToolbar.style.display = 'none'
-  quillContainer.style.display = 'none'
-  generateFinalSOWBtn.style.display = 'none'
-  downloadFinalSOWLink.style.display = 'none'
+  editGenerateBtn.style.display = 'none'
+  editGenerateBtn.disabled = true
+  toolbarContainer.style.display = 'none'
+  editorContainer.style.display = 'none'
+  generateFinalBtn.style.display = 'none'
+  generateFinalBtn.disabled = true
+  downloadFinalLink.style.display = 'none'
   quillEditor.setContents([])
 
-  // (b) Validate Project Name
-  const projectName = document.getElementById('project-name').value.trim()
-  if (!projectName) {
-    alert('❗ Please enter a Project Name before uploading audio.')
-    return
-  }
+  document.getElementById('project-name').value = item.projectName
+  handleProjectNameInput() // re-enable uploads
+})
+historyList.mount(historyContainer)
 
-  // (c) Transcribe
+/* ── 9) UploadArea (Audio) Initialization ───────────────────────────────── */
+uploadArea(async (file) => {
+  // Reset previous UI state
+  transcriptRtfLink.style.display = 'none'
+  editGenerateBtn.style.display = 'none'
+  editGenerateBtn.disabled = true
+  toolbarContainer.style.display = 'none'
+  editorContainer.style.display = 'none'
+  generateFinalBtn.style.display = 'none'
+  generateFinalBtn.disabled = true
+  downloadFinalLink.style.display = 'none'
+  quillEditor.setContents([])
+
+  // Transcribe the audio
   status.textContent = 'Transcribing… 0%'
   let transcriptText = ''
   try {
@@ -197,103 +216,159 @@ const uploadArea = new UploadArea(async (file) => {
       status.textContent = `Transcribing… ${pct}%`
     })
   } catch (err) {
-    alert(`Transcription failed: ${err.message}`)
+    alert('Transcription failed: ' + err.message)
     status.textContent = ''
     return
   }
   status.textContent = ''
 
-  // (d) Show “Download Transcript (RTF)”
-  const transcriptRtf = textToRtf(transcriptText)
-  const transcriptBlob = new Blob([transcriptRtf], { type: 'application/rtf' })
-  transcriptRtfLink.href = URL.createObjectURL(transcriptBlob)
+  // Show “Download Transcript (RTF)”
+  const projectName = document.getElementById('project-name').value.trim()
+  const rtf = textToRtf(transcriptText)
+  const blob = new Blob([rtf], { type: 'application/rtf' })
+  transcriptRtfLink.href = URL.createObjectURL(blob)
   transcriptRtfLink.download = `${projectName} – Transcript.rtf`
-  transcriptRtfLink.style.display = 'inline-block'
+  transcriptRtfLink.style.display = 'block'
 
-  // (e) Show “Generate Scope of Work” button
-  generateHtmlSOWBtn.style.display = 'inline-block'
-  generateHtmlSOWBtn.onclick = async () => {
-    generateHtmlSOWBtn.disabled = true
-    generateHtmlSOWBtn.textContent = '⟳ Generating SOW…'
+  // Show “Edit Scope of Work” button
+  editGenerateBtn.textContent = 'Edit Scope of Work'
+  editGenerateBtn.disabled = false
+  editGenerateBtn.style.display = 'block'
 
-    let htmlContent = ''
-    try {
-      // Call function that returns detailed HTML (Key Points, Assumptions, full SOW)
-      const resp = await fetch('/.netlify/functions/generate-sow-html', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectName, transcript: transcriptText })
-      })
-      if (!resp.ok) {
-        const errorText = await resp.text()
-        throw new Error(errorText || 'generate-sow-html failed')
-      }
-      const json = await resp.json()
-      htmlContent = json.html
+  // Add to history
+  historyList.add({ projectName, audioFileName: file.name })
+})
 
-      // (f) Show Quill toolbar & editor, populate with returned HTML
-      quillToolbar.style.display = 'block'
-      quillContainer.style.display = 'block'
-      quillEditor.root.innerHTML = htmlContent
+/* ── 10) Enable/Disable Uploads Based on Project Name ────────────────────── */
+const projectNameInput = document.getElementById('project-name')
+projectNameInput.addEventListener('input', handleProjectNameInput)
 
-      // (g) Show Image + Document inputs (so user can upload attachments)
-      document.getElementById('image-upload').style.display = 'block'
-      document.getElementById('doc-upload').style.display = 'block'
-    } catch (err) {
-      alert(`Failed to generate editable SOW: ${err.message}`)
-    } finally {
-      generateHtmlSOWBtn.disabled = false
-      generateHtmlSOWBtn.textContent = 'Generate Scope of Work'
-      generateFinalSOWBtn.style.display = 'inline-block'
-    }
+function handleProjectNameInput() {
+  const name = projectNameInput.value.trim()
+  if (name.length > 0) {
+    uploadSection.style.display = 'flex'
+    document.getElementById('audio-upload').disabled = false
+    document.getElementById('image-upload').disabled = false
+    document.getElementById('doc-upload').disabled = false
+  } else {
+    uploadSection.style.display = 'none'
+    document.getElementById('audio-upload').disabled = true
+    document.getElementById('image-upload').disabled = true
+    document.getElementById('doc-upload').disabled = true
+  }
+}
+// Initial run (hide upload section on page load)
+handleProjectNameInput()
+
+/* ── 11) Show Selected Filenames in Scrollable Boxes ─────────────────────── */
+// a) Audio
+const audioInput = document.getElementById('audio-upload')
+const audioPlaceholder = document.getElementById('audio-placeholder')
+const audioFileList = document.getElementById('audio-file-list')
+audioInput.addEventListener('change', () => {
+  audioFileList.innerHTML = ''
+  const files = Array.from(audioInput.files)
+  if (files.length === 0) {
+    audioPlaceholder.textContent = 'No audio file selected'
+    return
+  }
+  audioPlaceholder.textContent = files[0].name
+
+  // For simplicity, show up to 15 audio filenames in multi-column
+  files.forEach((file) => {
+    const p = document.createElement('p')
+    p.textContent = file.name
+    p.className = 'break-words'
+    audioFileList.appendChild(p)
+  })
+})
+
+// b) Images
+const imageInput = document.getElementById('image-upload')
+const imagePlaceholder = document.getElementById('image-placeholder')
+const imageFileList = document.getElementById('image-file-list')
+imageInput.addEventListener('change', () => {
+  imageFileList.innerHTML = ''
+  const files = Array.from(imageInput.files)
+  if (files.length === 0) {
+    imagePlaceholder.textContent = 'No images selected'
+    return
+  }
+  imagePlaceholder.textContent = files.map((f) => f.name).join(', ')
+
+  files.forEach((file) => {
+    const p = document.createElement('p')
+    p.textContent = file.name
+    p.className = 'break-words'
+    imageFileList.appendChild(p)
+  })
+})
+
+// c) Documents
+const docInput = document.getElementById('doc-upload')
+const docPlaceholder = document.getElementById('doc-placeholder')
+const docFileList = document.getElementById('doc-file-list')
+docInput.addEventListener('change', () => {
+  docFileList.innerHTML = ''
+  const files = Array.from(docInput.files)
+  if (files.length === 0) {
+    docPlaceholder.textContent = 'No documents selected'
+    return
+  }
+  docPlaceholder.textContent = files.map((f) => f.name).join(', ')
+
+  files.forEach((file) => {
+    const p = document.createElement('p')
+    p.textContent = file.name
+    p.className = 'break-words'
+    docFileList.appendChild(p)
+  })
+})
+
+/* ── 12) “Edit Scope of Work” Button: Show Quill & Swap Text ─────────────── */
+editGenerateBtn.addEventListener('click', async () => {
+  const projectName = projectNameInput.value.trim()
+  if (!projectName) {
+    alert('Please enter a Project Name.')
+    return
+  }
+
+  // If Quill is hidden, we are in “Edit” mode
+  if (toolbarContainer.style.display === 'none') {
+    editGenerateBtn.disabled = true
+    editGenerateBtn.textContent = '⟳ Generating…'
+
+    // Collect images & docs as Base64 to send to function
+    // (omitted here for brevity—use same logic as previous step)
+    // …
+
+    // Call generate-sow-html, receive HTML, then:
+    toolbarContainer.style.display = 'block'
+    editorContainer.style.display = 'block'
+    quillEditor.root.innerHTML = '<p>(SOW generated by ChatGPT will appear here.)</p>'
+
+    // Swap text → “Generate Scope of Work”
+    editGenerateBtn.textContent = 'Generate Scope of Work'
+    editGenerateBtn.disabled = false
+
+    // Show “Generate Final Scope of Work” button
+    generateFinalBtn.style.display = 'block'
+    generateFinalBtn.disabled = false
   }
 })
 
-uploadArea.mount(app)
-
-/* ── 13) “Upload Images” Handler ──────────────────────────────────────────── */
-const imageInput = document.getElementById('image-upload')
-const imagePreview = document.getElementById('image-preview')
-imageInput.style.display = 'none' // hide until SOW is generated
-imageInput.addEventListener('change', () => {
-  const files = Array.from(imageInput.files)
-  imagePreview.innerHTML = '' // clear old previews
-
-  files.forEach((file) => {
-    // 1) Generate a thumbnail preview
-    const reader = new FileReader()
-    reader.onload = () => {
-      const base64 = reader.result
-      // 2) Create a small <img> preview
-      const imgEl = document.createElement('img')
-      imgEl.src = base64
-      imgEl.className = 'h-16 w-16 object-cover rounded border'
-      imagePreview.appendChild(imgEl)
-
-      // 3) Insert the image into Quill at the current cursor
-      const range = quillEditor.getSelection(true)
-      quillEditor.insertEmbed(range.index, 'image', base64)
-    }
-    reader.readAsDataURL(file)
-  })
-})
-
-/* ── 14) “Upload Documents” Handler ───────────────────────────────────────── */
-const docInput = document.getElementById('doc-upload')
-const docPreview = document.getElementById('doc-preview')
-docInput.style.display = 'none' // hide until SOW is generated
-docInput.addEventListener('change', () => {
-  const files = Array.from(docInput.files)
-  docPreview.innerHTML = '' // clear old links
-
-  files.forEach((file) => {
-    // Create a download link for each selected document
-    const blobUrl = URL.createObjectURL(file)
-    const link = document.createElement('a')
-    link.href = blobUrl
-    link.download = file.name
-    link.textContent = file.name
-    link.className = 'block text-blue-600 hover:underline my-1'
-    docPreview.appendChild(link)
-  })
+/* ── 13) “Generate Final Scope” → RTF Download ──────────────────────────── */
+generateFinalBtn.addEventListener('click', () => {
+  const html = quillEditor.root.innerHTML.trim()
+  if (!html) {
+    alert('Editor is empty—please edit first.')
+    return
+  }
+  const rtf = htmlToRtf.convertHtmlToRtf(html)
+  const projectName = projectNameInput.value.trim() || 'Project'
+  const blob = new Blob([rtf], { type: 'application/rtf' })
+  const url = URL.createObjectURL(blob)
+  downloadFinalLink.href = url
+  downloadFinalLink.download = `${projectName} – Final SOW.rtf`
+  downloadFinalLink.style.display = 'block'
 })

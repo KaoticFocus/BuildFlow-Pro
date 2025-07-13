@@ -4,6 +4,6 @@
   publish   = "dist"
 
 [dev]
-  command    = "npm run dev"
-  port       = 9999     # or 8888 if freed up
+  command = "yarn dev:jobflow"  # Or "yarn dev:remorecap" to test the old app; switch as needed
+  port = 9999
   targetPort = 5173

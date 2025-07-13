@@ -1,0 +1,14 @@
+{
+  "name": "buildflow-pro-ai",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:remorecap": "yarn workspace @buildflow/remorecap dev",
+    "dev:jobflow": "yarn workspace @buildflow/jobflow dev",
+    "build:all": "yarn workspaces run build"
+  },
+  "devDependencies": {
+    "yarn": "^1.22.19"
+  }
+}

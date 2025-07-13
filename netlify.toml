@@ -1,9 +1,18 @@
 [build]
-  functions = "netlify/functions"
-  command   = "npm run build"
-  publish   = "dist"
+  command = "yarn build:all"
+  publish = "apps/jobflow/dist"  # Default to JobFlow for now; adjust for multi-app later
 
 [dev]
-  command = "yarn dev:jobflow"  # Or "yarn dev:remorecap" to test the old app; switch as needed
+  command = "yarn dev:jobflow"  # Or "yarn dev:remorecap" to test
   port = 9999
   targetPort = 5173
+
+[[redirects]]
+  from = "/remorecap/*"
+  to = "/apps/remorecap/dist/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/jobflow/*"
+  to = "/apps/jobflow/dist/:splat"
+  status = 200

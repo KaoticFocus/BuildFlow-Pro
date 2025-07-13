@@ -1,3 +1,18 @@
+# BuildFlow Pro AI Suite
+
+A collection of AI-powered tools for residential remodeling.
+
+## Apps
+- **RemoRecap**: Audio transcription for contractor-homeowner discussions.
+- **JobFlow Pro AI**: Document-based project scheduling and task management.
+
+## Setup
+- Install deps: `yarn install`
+- Run RemoRecap: `yarn dev:remorecap`
+- Run JobFlow: `yarn dev:jobflow`
+
+Deployed on Netlify. For multi-app deploys, see netlify.toml.
+
 # RenoRecap
 
 RenoRecap is a lightweight, browser-based app for quickly transcribing audio recordings of home remodeling discussions between homeowners and contractors. Powered by OpenAI’s Whisper API and designed for simple, offline-first use, RenoRecap lets you upload audio, see and download transcripts, and keep a local history—all without server-side storage.

@@ -1,9 +1,9 @@
 [build]
   command = "yarn build:all"
-  publish = "apps/jobflow/dist"  # Default to JobFlow for now; adjust for multi-app later
+  publish = "apps/jobflow/dist"
 
 [dev]
-  command = "yarn dev:jobflow"  # Or "yarn dev:remorecap" to test
+  command = "yarn dev:jobflow"
   port = 9999
   targetPort = 5173
 

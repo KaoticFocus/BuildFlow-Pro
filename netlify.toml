@@ -1,6 +1,6 @@
 [build]
   command = "yarn build:all"
-  publish = "apps/jobflow/dist"
+  publish = "."  # Publish from root to include all sub-dists
 
 [dev]
   command = "yarn dev:jobflow"
@@ -16,3 +16,22 @@
   from = "/jobflow/*"
   to = "/apps/jobflow/dist/:splat"
   status = 200
+
+# Optional: Catch-all for SPA client routing (add one per app if needed)
+[[redirects]]
+  from = "/remorecap/*"
+  to = "/apps/remorecap/dist/index.html"
+  status = 200
+  force = false  # Only if not matched by static files
+
+[[redirects]]
+  from = "/jobflow/*"
+  to = "/apps/jobflow/dist/index.html"
+  status = 200
+  force = false
+
+# Optional: Redirect root to jobflow (or remorecap) if no root index.html
+[[redirects]]
+  from = "/"
+  to = "/jobflow/"
+  status = 301

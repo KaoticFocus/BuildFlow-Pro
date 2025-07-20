@@ -7,6 +7,9 @@
     "dev": "vite",
     "dev:remorecap": "vite --config vite.config.js",
     "dev:jobflow": "vite --config vite.jobflow.config.js",
+    "build:remorecap": "vite build --config vite.config.js",
+    "build:jobflow": "vite build --config vite.jobflow.config.js",
+    "build:all": "yarn build:remorecap && yarn build:jobflow",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"

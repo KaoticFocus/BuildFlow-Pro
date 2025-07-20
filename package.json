@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "form-data": "^4.0.4",
     "marked": "^14.0.0",
     "node-fetch": "^3.3.2",
     "react": "^18.2.0",

@@ -28,7 +28,7 @@ const JobFlowApp = () => {
   }
 
   return (
-    <Router>
+    <Router basename="/jobflow/">  {/* Add basename here */}
       <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
         <div className="flex-1 overflow-y-auto">
           <Routes>

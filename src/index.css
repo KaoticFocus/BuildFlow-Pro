@@ -1,0 +1,10 @@
+/* src/index.css - Basic global styles (optional; can be empty) */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f0f0f0;
+}
+
+#root {
+  height: 100vh;
+}

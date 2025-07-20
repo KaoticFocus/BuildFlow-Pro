@@ -6,10 +6,14 @@ const JobFlowLogin = () => {
   const [message, setMessage] = useState('');
 
   const handleMagicLink = async () => {
+    const redirectUrl = import.meta.env.PROD 
+      ? 'https://buildflowproai.netlify.app/jobflow/' 
+      : window.location.origin + '/jobflow/';  // Fallback for dev
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin + '/jobflow/',  // Redirect back to app after click
+        emailRedirectTo: redirectUrl,
       },
     });
     if (error) {

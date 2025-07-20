@@ -9,28 +9,28 @@
 
 [[redirects]]
   from = "/remorecap/*"
-  to = "/apps/remorecap/dist/:splat"
+  to = "/dist/remorecap/:splat"
   status = 200
 
 [[redirects]]
   from = "/jobflow/*"
-  to = "/apps/jobflow/dist/:splat"
+  to = "/dist/jobflow/:splat"
   status = 200
 
-# Optional: Catch-all for SPA client routing (add one per app if needed)
+# Catch-all for SPA client routing
 [[redirects]]
   from = "/remorecap/*"
-  to = "/apps/remorecap/dist/index.html"
-  status = 200
-  force = false  # Only if not matched by static files
-
-[[redirects]]
-  from = "/jobflow/*"
-  to = "/apps/jobflow/dist/index.html"
+  to = "/dist/remorecap/index.html"
   status = 200
   force = false
 
-# Optional: Redirect root to jobflow (or remorecap) if no root index.html
+[[redirects]]
+  from = "/jobflow/*"
+  to = "/dist/jobflow/index.html"
+  status = 200
+  force = false
+
+# Redirect root to jobflow
 [[redirects]]
   from = "/"
   to = "/jobflow/"

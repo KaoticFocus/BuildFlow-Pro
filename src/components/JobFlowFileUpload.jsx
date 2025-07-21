@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
 
 const uploadTypes = [
@@ -10,8 +11,9 @@ const uploadTypes = [
   'Photos'
 ];
 
-const JobFlowFileUpload = ({ projectId }) => {
+const JobFlowFileUpload = ({ projectId, setWorkflowStep }) => {
   const [files, setFiles] = useState([]);
+  const navigate = useNavigate();
 
   const handleUpload = async (e, type) => {
     const file = e.target.files[0];
@@ -20,6 +22,11 @@ const JobFlowFileUpload = ({ projectId }) => {
       .upload(`${projectId}/${type}/${file.name}`, file);
     if (error) alert(error.message);
     else setFiles([...files, data.path]);
+  };
+
+  const handleCompleteUploads = () => {
+    setWorkflowStep(1); // Advance to instructions
+    navigate('/instructions');
   };
 
   useEffect(() => {
@@ -46,6 +53,7 @@ const JobFlowFileUpload = ({ projectId }) => {
           </li>
         ))}
       </ul>
+      <button onClick={handleCompleteUploads} className="bg-green-500 text-white p-2 rounded w-full mt-4">Complete Uploads & Proceed</button>
     </div>
   );
 };

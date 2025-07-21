@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
-const JobFlowScheduleEditor = ({ projectId }) => {
-  const [params, setParams] = useState({ weekends: false, halfDays: false, holidays: '' });
+const JobFlowScheduleEditor = ({ projectId, setWorkflowStep }) => {
+  const [params, setParams] = useState({ startDate: '', weekends: false, halfDays: false, holidays: '' });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchParams = async () => {
@@ -14,34 +16,26 @@ const JobFlowScheduleEditor = ({ projectId }) => {
 
   const handleSave = async () => {
     await supabase.from('projects').update({ schedule_params: params }).eq('id', projectId);
+    setWorkflowStep(5); // Advance to generate schedules
+    navigate('/generate-schedules');
   };
 
   return (
     <div className="p-4 overflow-y-auto">
-      <label className="block mb-2">
-        <input
-          type="checkbox"
-          checked={params.weekends}
-          onChange={(e) => setParams({ ...params, weekends: e.target.checked })}
-        />
-        Exclude Weekends
-      </label>
-      <label className="block mb-2">
-        <input
-          type="checkbox"
-          checked={params.halfDays}
-          onChange={(e) => setParams({ ...params, halfDays: e.target.checked })}
-        />
-        Half Days on Fridays
-      </label>
-      <textarea
-        placeholder="Holidays (one per line, YYYY-MM-DD)"
-        value={params.holidays}
-        onChange={(e) => setParams({ ...params, holidays: e.target.value })}
-        className="mb-2 p-2 border rounded w-full"
-      />
+      <label>Start Date:</label>
+      <input type="date" value={params.startDate} onChange={(e) => setParams({ ...params, startDate: e.target.value })} className="mb-2 p-2 border rounded w-full" />
+
+      <label>Exclude Weekends:</label>
+      <input type="checkbox" checked={params.weekends} onChange={(e) => setParams({ ...params, weekends: e.target.checked })} />
+
+      <label>Half Days on Fridays:</label>
+      <input type="checkbox" checked={params.halfDays} onChange={(e) => setParams({ ...params, halfDays: e.target.checked })} />
+
+      <label>Holidays (one per line, YYYY-MM-DD):</label>
+      <textarea value={params.holidays} onChange={(e) => setParams({ ...params, holidays: e.target.value })} className="mb-2 p-2 border rounded w-full" />
+
       <button onClick={handleSave} className="bg-green-500 text-white p-2 rounded w-full">
-        Save Baseline Schedule
+        Save and Generate Schedules
       </button>
     </div>
   );

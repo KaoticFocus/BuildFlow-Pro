@@ -5,13 +5,16 @@ import JobFlowLogin from '../components/JobFlowLogin';
 import JobFlowProjectCreate from '../components/JobFlowProjectCreate';
 import JobFlowProjectInfo from '../components/JobFlowProjectInfo';
 import JobFlowFileUpload from '../components/JobFlowFileUpload';
+import JobFlowSpecialInstructions from '../components/JobFlowSpecialInstructions'; // New
 import JobFlowTaskGenerator from '../components/JobFlowTaskGenerator';
 import JobFlowScheduleEditor from '../components/JobFlowScheduleEditor';
+import JobFlowGenerateSchedules from '../components/JobFlowGenerateSchedules'; // New
 import JobFlowBottomTabBar from '../components/JobFlowBottomTabBar';
 
 const JobFlowApp = () => {
   const [session, setSession] = useState(null);
   const [projectId, setProjectId] = useState(null);
+  const [workflowStep, setWorkflowStep] = useState(0); // Track progress: 0=uploads, 1=instructions, 2=tasks, 3=edit/submit, 4=params, 5=schedules
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -28,19 +31,21 @@ const JobFlowApp = () => {
   }
 
   return (
-    <Router basename="/jobflow/">  {/* Add basename here */}
+    <Router basename="/jobflow/">
       <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
         <div className="flex-1 overflow-y-auto">
           <Routes>
-            <Route path="/" element={<JobFlowProjectCreate setProjectId={setProjectId} />} />
+            <Route path="/" element={<JobFlowProjectCreate setProjectId={setProjectId} setWorkflowStep={setWorkflowStep} />} />
             <Route path="/info" element={<JobFlowProjectInfo projectId={projectId} />} />
-            <Route path="/uploads" element={<JobFlowFileUpload projectId={projectId} />} />
-            <Route path="/tasks" element={<JobFlowTaskGenerator projectId={projectId} />} />
-            <Route path="/schedule" element={<JobFlowScheduleEditor projectId={projectId} />} />
+            <Route path="/uploads" element={workflowStep >= 0 ? <JobFlowFileUpload projectId={projectId} setWorkflowStep={setWorkflowStep} /> : <Navigate to="/" />} />
+            <Route path="/instructions" element={workflowStep >= 1 ? <JobFlowSpecialInstructions projectId={projectId} setWorkflowStep={setWorkflowStep} /> : <Navigate to="/uploads" />} />
+            <Route path="/tasks" element={workflowStep >= 2 ? <JobFlowTaskGenerator projectId={projectId} setWorkflowStep={setWorkflowStep} /> : <Navigate to="/instructions" />} />
+            <Route path="/schedule" element={workflowStep >= 3 ? <JobFlowScheduleEditor projectId={projectId} setWorkflowStep={setWorkflowStep} /> : <Navigate to="/tasks" />} />
+            <Route path="/generate-schedules" element={workflowStep >= 4 ? <JobFlowGenerateSchedules projectId={projectId} setWorkflowStep={setWorkflowStep} /> : <Navigate to="/schedule" />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
-        <JobFlowBottomTabBar />
+        <JobFlowBottomTabBar workflowStep={workflowStep} />
       </div>
     </Router>
   );

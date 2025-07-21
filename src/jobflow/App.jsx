@@ -32,6 +32,7 @@ const JobFlowApp = () => {
   const [session, setSession] = useState(null);
   const [projectId, setProjectId] = useState(null);
   const [workflowStep, setWorkflowStep] = useState(0);
+  const [darkMode, setDarkMode] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -41,8 +42,13 @@ const JobFlowApp = () => {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => setDarkMode(mediaQuery.matches);
+    mediaQuery.addEventListener('change', handleChange);
     return () => {
       authListener.subscription.unsubscribe();
+      mediaQuery.removeEventListener('change', handleChange);
     };
   }, []);
 
@@ -59,8 +65,8 @@ const JobFlowApp = () => {
 
   return (
     <Router basename="/jobflow/">
-      <div className="flex flex-col h-screen overflow-hidden bg-gray-100 max-w-screen-sm mx-auto"> {/* Mobile centering */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div className={`flex flex-col h-screen overflow-hidden ${darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-100 text-black'} max-w-screen-sm mx-auto`}>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
           <Routes>
             <Route path="/" element={<JobFlowHome />} />
             <Route path="/other-apps" element={<JobFlowOtherApps />} />

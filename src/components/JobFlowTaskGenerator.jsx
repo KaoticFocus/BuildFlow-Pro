@@ -20,24 +20,23 @@ const JobFlowTaskGenerator = ({ projectId, setWorkflowStep }) => {
   }, [projectId]);
 
   const handleGenerate = async () => {
-    const newTasks = generateTasks(scope, instructions); // Update generateTasks to use instructions
+    const newTasks = generateTasks(scope, instructions);
     setTaskList(newTasks);
     await supabase.from('tasks').upsert({ project_id: projectId, task_list: newTasks });
-    setWorkflowStep(3); // Advance to edit/submit
   };
 
   const handleSubmitBaseline = async () => {
     await supabase.from('tasks').update({ baseline_task_list: taskList }).eq('project_id', projectId);
-    setWorkflowStep(4); // Advance to params
+    setWorkflowStep(3); // Advance to schedule editor
     navigate('/schedule');
   };
 
   return (
     <div className="p-4 overflow-y-auto">
-      <h1 className="text-xl font-bold mb-4">Generate Task List</h1>
+      <h1 className="text-xl font-bold mb-4">Create Daily Task List</h1>
       <p>Based on scope and instructions: Difficulty {instructions.difficulty}, Milestones: {instructions.milestones?.join(', ')}</p>
-      <button onClick={handleGenerate} className="bg-blue-500 text-white p-2 rounded w-full mb-4">
-        Generate Daily Task List
+      <button onClick={handleGenerate} className="bg-blue-500 text-white p-2 rounded w-full mb-4" disabled={taskList.length > 0}>
+        Generate Editable Baseline
       </button>
       <ul>
         {taskList.map((task, index) => (
@@ -56,8 +55,8 @@ const JobFlowTaskGenerator = ({ projectId, setWorkflowStep }) => {
           </li>
         ))}
       </ul>
-      <button onClick={handleSubmitBaseline} className="bg-green-500 text-white p-2 rounded w-full mt-4">
-        Submit as Baseline
+      <button onClick={handleSubmitBaseline} className="bg-green-500 text-white p-2 rounded w-full mt-4" disabled={taskList.length === 0}>
+        Submit as Baseline Schedule
       </button>
     </div>
   );

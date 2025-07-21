@@ -16,13 +16,14 @@ const JobFlowScheduleEditor = ({ projectId, setWorkflowStep }) => {
 
   const handleSave = async () => {
     await supabase.from('projects').update({ schedule_params: params }).eq('id', projectId);
-    setWorkflowStep(5); // Advance to generate schedules
+    setWorkflowStep(4); // Advance to generate schedules
     navigate('/generate-schedules');
   };
 
   return (
     <div className="p-4 overflow-y-auto">
-      <label>Start Date:</label>
+      <h1 className="text-xl font-bold mb-4">User Edits & Submits</h1>
+      <label>Pick Start Date:</label>
       <input type="date" value={params.startDate} onChange={(e) => setParams({ ...params, startDate: e.target.value })} className="mb-2 p-2 border rounded w-full" />
 
       <label>Exclude Weekends:</label>
@@ -34,9 +35,7 @@ const JobFlowScheduleEditor = ({ projectId, setWorkflowStep }) => {
       <label>Holidays (one per line, YYYY-MM-DD):</label>
       <textarea value={params.holidays} onChange={(e) => setParams({ ...params, holidays: e.target.value })} className="mb-2 p-2 border rounded w-full" />
 
-      <button onClick={handleSave} className="bg-green-500 text-white p-2 rounded w-full">
-        Save and Generate Schedules
-      </button>
+      <button onClick={handleSave} className="bg-green-500 text-white p-2 rounded w-full mt-4">Save and Generate Schedules</button>
     </div>
   );
 };

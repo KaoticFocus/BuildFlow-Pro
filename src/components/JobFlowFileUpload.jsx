@@ -6,7 +6,7 @@ const uploadTypes = [
   'Contract/Contact Info',
   'Labor Hours Spreadsheet',
   'Vendor/Materials List',
-  'Sub-Contractor List',
+  'Sub-Contractor list',
   'Drawings',
   'Photos'
 ];
@@ -40,6 +40,7 @@ const JobFlowFileUpload = ({ projectId, setWorkflowStep }) => {
 
   return (
     <div className="p-4 overflow-y-auto">
+      <h1 className="text-xl font-bold mb-4">Upload Files</h1>
       {uploadTypes.map(type => (
         <div key={type} className="mb-4">
           <label>{type}</label>
@@ -53,7 +54,9 @@ const JobFlowFileUpload = ({ projectId, setWorkflowStep }) => {
           </li>
         ))}
       </ul>
-      <button onClick={handleCompleteUploads} className="bg-green-500 text-white p-2 rounded w-full mt-4">Complete Uploads & Proceed</button>
+      <button onClick={handleCompleteUploads} className="bg-green-500 text-white p-2 rounded w-full mt-4" disabled={files.length === 0}>
+        Complete Uploads & Proceed
+      </button>
     </div>
   );
 };

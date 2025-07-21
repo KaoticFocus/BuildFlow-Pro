@@ -29,18 +29,18 @@ const JobFlowGenerateSchedules = ({ projectId }) => {
   }, [projectId]);
 
   return (
-    <div className="p-4 overflow-y-auto">
-      <h1 className="text-xl font-bold mb-4">AI Generated Schedules</h1>
-      <h2>Baseline Schedule</h2>
-      <ul>
+    <div className="p-4 flex flex-col space-y-4 overflow-y-auto">
+      <h1 className="text-2xl font-bold text-center mb-6">AI Generated Schedules</h1>
+      <h2 className="text-xl font-bold">Baseline Schedule</h2>
+      <ul className="space-y-2">
         {baseline.map((task, index) => (
-          <li key={index} dangerouslySetInnerHTML={{ __html: marked(task) }} />
+          <li key={index} className="bg-gray-200 p-3 rounded prose max-w-none" dangerouslySetInnerHTML={{ __html: marked(task) }} />
         ))}
       </ul>
-      <h2>Working Schedule</h2>
-      <ul>
+      <h2 className="text-xl font-bold">Working Schedule</h2>
+      <ul className="space-y-2">
         {working.map((task, index) => (
-          <li key={index} dangerouslySetInnerHTML={{ __html: marked(task) }} />
+          <li key={index} className="bg-gray-200 p-3 rounded prose max-w-none" dangerouslySetInnerHTML={{ __html: marked(task) }} />
         ))}
       </ul>
     </div>

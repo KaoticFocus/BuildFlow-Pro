@@ -15,13 +15,13 @@ const JobFlowClientOnboarding = () => {
   };
 
   return (
-    <div className="p-4 overflow-y-auto">
-      <h1 className="text-xl font-bold mb-4">Client Onboarding</h1>
-      <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="mb-2 p-2 border rounded w-full" />
-      <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="mb-2 p-2 border rounded w-full" />
-      <input type="text" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="mb-2 p-2 border rounded w-full" />
-      <textarea placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} className="mb-2 p-2 border rounded w-full" />
-      <button onClick={handleSubmit} className="bg-green-500 text-white p-2 rounded w-full">Save Client & Proceed to Project Onboarding</button>
+    <div className="p-4 flex flex-col space-y-4 overflow-y-auto">
+      <h1 className="text-2xl font-bold text-center mb-6">Client Onboarding</h1>
+      <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="p-3 border rounded w-full text-lg" />
+      <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="p-3 border rounded w-full text-lg" />
+      <input type="text" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="p-3 border rounded w-full text-lg" />
+      <textarea placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} className="p-3 border rounded w-full text-lg" />
+      <button onClick={handleSubmit} className="bg-green-500 text-white p-4 rounded-lg text-center text-lg font-medium">Save Client & Proceed to Project Onboarding</button>
     </div>
   );
 };

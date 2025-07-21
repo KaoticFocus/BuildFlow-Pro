@@ -5,10 +5,10 @@ const JobFlowClientSearch = () => {
   const [search, setSearch] = useState('');
 
   return (
-    <div className="p-4 overflow-y-auto">
-      <h1 className="text-xl font-bold mb-4">Client Search</h1>
-      <input type="text" placeholder="Search clients" value={search} onChange={(e) => setSearch(e.target.value)} className="mb-2 p-2 border rounded w-full" />
-      <Link to="/client-list" className="block bg-blue-500 text-white p-2 rounded">View List of Clients</Link>
+    <div className="p-4 flex flex-col space-y-4 overflow-y-auto">
+      <h1 className="text-2xl font-bold text-center mb-6">Client Search</h1>
+      <input type="text" placeholder="Search clients" value={search} onChange={(e) => setSearch(e.target.value)} className="p-3 border rounded w-full text-lg" />
+      <Link to="/client-list" className="bg-blue-500 text-white p-4 rounded-lg text-center text-lg font-medium">View List of Clients</Link>
     </div>
   );
 };

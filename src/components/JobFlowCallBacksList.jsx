@@ -16,11 +16,11 @@ const JobFlowCallBacksList = () => {
   }, [projectId]);
 
   return (
-    <div className="p-4 overflow-y-auto">
-      <h1 className="text-xl font-bold mb-4">List of call backs that need to be addressed</h1>
-      <ul>
+    <div className="p-4 flex flex-col space-y-4 overflow-y-auto">
+      <h1 className="text-2xl font-bold text-center mb-6">List of call backs that need to be addressed</h1>
+      <ul className="space-y-2">
         {callBacks.map((cb, index) => (
-          <li key={index}>{cb}</li>
+          <li key={index} className="bg-gray-200 p-4 rounded-lg">{cb}</li>
         ))}
       </ul>
     </div>

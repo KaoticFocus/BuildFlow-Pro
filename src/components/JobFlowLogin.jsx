@@ -8,7 +8,7 @@ const JobFlowLogin = () => {
   const handleMagicLink = async () => {
     const redirectUrl = import.meta.env.PROD 
       ? 'https://buildflowproai.netlify.app/jobflow/' 
-      : window.location.origin + '/jobflow/';  // Fallback for dev
+      : window.location.origin + '/jobflow/';
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -24,18 +24,18 @@ const JobFlowLogin = () => {
   };
 
   return (
-    <div className="p-4 flex flex-col items-center justify-center h-screen bg-gray-200">
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-200 px-4">
       <input
         type="email"
         placeholder="Enter your email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="mb-2 p-2 border rounded w-full max-w-md"
+        className="mb-4 p-3 border rounded w-full max-w-md text-lg"
       />
-      <button onClick={handleMagicLink} className="bg-blue-500 text-white p-2 rounded w-full max-w-md">
+      <button onClick={handleMagicLink} className="bg-blue-500 text-white p-3 rounded w-full max-w-md text-lg font-medium">
         Send Magic Link
       </button>
-      {message && <p className="mt-2 text-red-500">{message}</p>}
+      {message && <p className="mt-4 text-red-500 text-center">{message}</p>}
     </div>
   );
 };

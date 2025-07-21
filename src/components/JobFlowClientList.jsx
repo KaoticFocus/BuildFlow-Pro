@@ -14,12 +14,12 @@ const JobFlowClientList = () => {
   }, []);
 
   return (
-    <div className="p-4 overflow-y-auto">
-      <h1 className="text-xl font-bold mb-4">List of Clients</h1>
-      <ul>
+    <div className="p-4 flex flex-col space-y-4 overflow-y-auto">
+      <h1 className="text-2xl font-bold text-center mb-6">List of Clients</h1>
+      <ul className="space-y-2">
         {clients.map(client => (
           <li key={client.id}>
-            <Link to={`/project-onboarding?clientId=${client.id}`} className="text-blue-500">{client.name}</Link>
+            <Link to={`/project-onboarding?clientId=${client.id}`} className="block bg-gray-200 p-4 rounded-lg text-blue-500 text-center">{client.name}</Link>
           </li>
         ))}
       </ul>

@@ -2,23 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
 import JobFlowLogin from '../components/JobFlowLogin';
-import JobFlowHome from '../components/JobFlowHome'; // New
-import JobFlowOtherApps from '../components/JobFlowOtherApps'; // New
-import JobFlowNewProject from '../components/JobFlowNewProject'; // New
-import JobFlowExistingClient from '../components/JobFlowExistingClient'; // New
-import JobFlowNewClient from '../components/JobFlowNewClient'; // New
-import JobFlowClientSearch from '../components/JobFlowClientSearch'; // New
-import JobFlowClientList from '../components/JobFlowClientList'; // New
-import JobFlowClientOnboarding from '../components/JobFlowClientOnboarding'; // New
-import JobFlowProjectOnboarding from '../components/JobFlowProjectOnboarding'; // New
-import JobFlowPreConProjects from '../components/JobFlowPreConProjects'; // New
-import JobFlowPreConList from '../components/JobFlowPreConList'; // New
-import JobFlowWorkingProjects from '../components/JobFlowWorkingProjects'; // New
-import JobFlowWorkingList from '../components/JobFlowWorkingList'; // New
-import JobFlowCallBacks from '../components/JobFlowCallBacks'; // New
-import JobFlowCallBacksList from '../components/JobFlowCallBacksList'; // New
-import JobFlowClosedProjects from '../components/JobFlowClosedProjects'; // New
-import JobFlowClosedList from '../components/JobFlowClosedList'; // New
+import JobFlowHome from '../components/JobFlowHome';
+import JobFlowOtherApps from '../components/JobFlowOtherApps';
+import JobFlowNewProject from '../components/JobFlowNewProject';
+import JobFlowExistingClient from '../components/JobFlowExistingClient';
+import JobFlowNewClient from '../components/JobFlowNewClient';
+import JobFlowClientSearch from '../components/JobFlowClientSearch';
+import JobFlowClientList from '../components/JobFlowClientList';
+import JobFlowClientOnboarding from '../components/JobFlowClientOnboarding';
+import JobFlowProjectOnboarding from '../components/JobFlowProjectOnboarding';
+import JobFlowPreConProjects from '../components/JobFlowPreConProjects';
+import JobFlowPreConList from '../components/JobFlowPreConList';
+import JobFlowWorkingProjects from '../components/JobFlowWorkingProjects';
+import JobFlowWorkingList from '../components/JobFlowWorkingList';
+import JobFlowCallBacks from '../components/JobFlowCallBacks';
+import JobFlowCallBacksList from '../components/JobFlowCallBacksList';
+import JobFlowClosedProjects from '../components/JobFlowClosedProjects';
+import JobFlowClosedList from '../components/JobFlowClosedList';
 import JobFlowProjectCreate from '../components/JobFlowProjectCreate';
 import JobFlowProjectInfo from '../components/JobFlowProjectInfo';
 import JobFlowFileUpload from '../components/JobFlowFileUpload';
@@ -59,8 +59,8 @@ const JobFlowApp = () => {
 
   return (
     <Router basename="/jobflow/">
-      <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
-        <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-col h-screen overflow-hidden bg-gray-100 max-w-screen-sm mx-auto"> {/* Mobile centering */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <Routes>
             <Route path="/" element={<JobFlowHome />} />
             <Route path="/other-apps" element={<JobFlowOtherApps />} />

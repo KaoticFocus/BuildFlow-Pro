@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 
 const JobFlowWorkingProjects = () => {
   return (
-    <div className="p-4 overflow-y-auto">
-      <h1 className="text-xl font-bold mb-4">Working Projects</h1>
-      <Link to="/working-list" className="block bg-green-500 text-white p-2 rounded">List of project that are in production</Link>
+    <div className="p-4 flex flex-col space-y-4 overflow-y-auto">
+      <h1 className="text-2xl font-bold text-center mb-6">Working Projects</h1>
+      <Link to="/working-list" className="bg-green-500 text-white p-4 rounded-lg text-center text-lg font-medium">List of project that are in production</Link>
     </div>
   );
 };

@@ -17,7 +17,6 @@ const JobFlowProjectInfo = ({ projectId }) => {
     fetchInfo();
   }, [projectId]);
 
-  // Simulate extraction: assume contact_info is json from form or uploads
   const markdownContent = `
 # Project: ${info.name || ''}
 
@@ -28,9 +27,8 @@ Contacts: ${JSON.stringify(info.contact_info || {}, null, 2)}
 
   return (
     <div className="p-4 overflow-y-auto">
-      <div dangerouslySetInnerHTML={{ __html: marked(markdownContent) }} />
-      {/* Form to simulate/edit extracted info */}
-      <input type="text" placeholder="Add Contact Info" className="mt-4 p-2 border rounded w-full" onChange={(e) => {/* Update Supabase */}} />
+      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: marked(markdownContent) }} />
+      <input type="text" placeholder="Add Contact Info" className="mt-4 p-3 border rounded w-full text-lg" onChange={(e) => {/* Update Supabase */}} />
     </div>
   );
 };

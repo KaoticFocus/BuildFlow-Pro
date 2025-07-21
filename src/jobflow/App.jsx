@@ -5,26 +5,36 @@ import JobFlowLogin from '../components/JobFlowLogin';
 import JobFlowProjectCreate from '../components/JobFlowProjectCreate';
 import JobFlowProjectInfo from '../components/JobFlowProjectInfo';
 import JobFlowFileUpload from '../components/JobFlowFileUpload';
-import JobFlowSpecialInstructions from '../components/JobFlowSpecialInstructions'; // New
+import JobFlowSpecialInstructions from '../components/JobFlowSpecialInstructions';
 import JobFlowTaskGenerator from '../components/JobFlowTaskGenerator';
 import JobFlowScheduleEditor from '../components/JobFlowScheduleEditor';
-import JobFlowGenerateSchedules from '../components/JobFlowGenerateSchedules'; // New
+import JobFlowGenerateSchedules from '../components/JobFlowGenerateSchedules';
 import JobFlowBottomTabBar from '../components/JobFlowBottomTabBar';
 
 const JobFlowApp = () => {
   const [session, setSession] = useState(null);
   const [projectId, setProjectId] = useState(null);
-  const [workflowStep, setWorkflowStep] = useState(0); // Track progress: 0=uploads, 1=instructions, 2=tasks, 3=edit/submit, 4=params, 5=schedules
+  const [workflowStep, setWorkflowStep] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setProjectId(null);
+    setWorkflowStep(0);
+  };
 
   if (!session) {
     return <JobFlowLogin />;
@@ -45,7 +55,7 @@ const JobFlowApp = () => {
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
-        <JobFlowBottomTabBar workflowStep={workflowStep} />
+        <JobFlowBottomTabBar workflowStep={workflowStep} onLogout={handleLogout} />
       </div>
     </Router>
   );
